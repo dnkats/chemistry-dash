@@ -1,0 +1,29 @@
+{
+  "name": "chemistry-dash",
+  "version": "1.0.0",
+  "description": "A runner/platformer game themed around chemistry elements.",
+  "main": "src/js/main.js",
+  "scripts": {
+    "start": "live-server src",
+    "build": "webpack --mode production",
+    "test": "jest"
+  },
+  "keywords": [
+    "game",
+    "chemistry",
+    "runner",
+    "platformer"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "jquery": "^3.6.0",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "jest": "^27.4.5",
+    "live-server": "^1.2.0",
+    "webpack": "^5.64.0",
+    "webpack-cli": "^4.9.1"
+  }
+}

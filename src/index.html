@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chemistry Dash</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <h1>Chemistry Dash</h1>
+        <div id="hud"></div>
+        <canvas id="game-canvas"></canvas>
+    </div>
+    <!-- Load utility scripts first -->
+    <script src="js/utils/chemistry-data.js"></script>
+    <script src="js/utils/physics.js"></script>
+    
+    <!-- Load component scripts -->
+    <script src="js/components/player.js"></script>
+    <script src="js/components/obstacle.js"></script>
+    <script src="js/components/molecule.js"></script>
+    
+    <!-- Load UI scripts -->
+    <script src="js/ui/hud.js"></script>
+    <script src="js/ui/menu.js"></script>
+    
+    <!-- Load main game scripts -->
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
