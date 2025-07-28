@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chemistry Dash - GitHub Pages</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #232f3e, #0f3460);
+            color: white;
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .emoji {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .play-button {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #4ecca3, #36b896);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.3em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(78, 204, 163, 0.4);
+        }
+        
+        .play-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(78, 204, 163, 0.6);
+            background: linear-gradient(45deg, #36b896, #4ecca3);
+        }
+        
+        .features {
+            margin-top: 30px;
+            text-align: left;
+        }
+        
+        .features h3 {
+            color: #4ecca3;
+            margin-bottom: 15px;
+        }
+        
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .features li {
+            margin: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .features li:before {
+            content: "⚗️";
+            position: absolute;
+            left: 0;
+        }
+        
+        .github-link {
+            margin-top: 30px;
+            color: #4ecca3;
+            text-decoration: none;
+        }
+        
+        .github-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="emoji">🧪</div>
+        <h1>Chemistry Dash</h1>
+        <p>A browser game with a chemistry theme! Navigate through a chemistry lab as a carbon atom, collecting elements and avoiding dangerous lab equipment.</p>
+        
+        <a href="src/index.html" class="play-button">🎮 Play Now!</a>
+        
+        <div class="features">
+            <h3>🎯 Game Features:</h3>
+            <ul>
+                <li>Collect periodic table elements</li>
+                <li>Form real chemical molecules for bonus points</li>
+                <li>Avoid chemistry lab obstacles</li>
+                <li>Progressive difficulty and smooth 60 FPS gameplay</li>
+                <li>Educational chemistry content</li>
+            </ul>
+        </div>
+        
+        <a href="https://github.com/yourusername/chemistry-dash" class="github-link" target="_blank">
+            📱 View on GitHub
+        </a>
+    </div>
+    
+    <script>
+        // Auto-redirect after 3 seconds if user doesn't click
+        setTimeout(() => {
+            const playButton = document.querySelector('.play-button');
+            if (playButton) {
+                playButton.style.animation = 'pulse 1s infinite';
+            }
+        }, 3000);
+    </script>
+    
+    <style>
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</body>
+</html>
