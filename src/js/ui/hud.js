@@ -27,6 +27,10 @@ class HUD {
                 <span id="speed-value">0</span>
             </div>
             <div class="hud-item">
+                <span class="hud-label">Player Molecule:</span>
+                <span id="player-molecule">Hydrogen (H)</span>
+            </div>
+            <div class="hud-item">
                 <span class="hud-label">Elements:</span>
                 <div id="collected-elements" class="collected-elements"></div>
             </div>
@@ -36,6 +40,9 @@ class HUD {
                     <div id="molecule-formula">No elements</div>
                     <div id="molecule-name">Start collecting!</div>
                 </div>
+            </div>
+            <div class="debug-controls" style="font-size: 10px; color: #888; margin-top: 10px;">
+                Debug: Press N/P to advance/go back levels
             </div>
         `;
     }
@@ -50,6 +57,14 @@ class HUD {
     updateLevel(newLevel) {
         this.level = newLevel;
         document.getElementById('level-value').textContent = this.level;
+    }
+    
+    // Update player molecule display
+    updatePlayerMolecule(moleculeData) {
+        const playerMoleculeElement = document.getElementById('player-molecule');
+        if (playerMoleculeElement && moleculeData) {
+            playerMoleculeElement.textContent = `${moleculeData.name} (${moleculeData.formula})`;
+        }
     }
     
     // Update speed display

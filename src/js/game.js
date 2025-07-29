@@ -40,12 +40,14 @@ class Game {
         this.canvas.width = this.width;
         this.canvas.height = this.height;
         
-        // Create player
-        this.player = new Player(80, this.height - 70); // Moved further from edge, adjusted height
+        // Create player with initial level
+        this.player = new Player(80, this.height - 70, this.level); // Pass level to player
         console.log('Game: Player created');
         
         // Initialize HUD
         this.hud = new HUD();
+        // Update HUD to show initial molecule
+        this.hud.updatePlayerMolecule(this.player.moleculeData);
         console.log('Game: HUD created');
         
         // Initialize Menu
@@ -67,6 +69,25 @@ class Game {
             if ((e.code === 'Space' || e.code === 'ArrowUp') && this.running && !this.paused) {
                 e.preventDefault();
                 this.player.jump();
+            }
+            
+            // Debug controls for testing molecule progression
+            if (e.code === 'KeyN' && this.running) {
+                // Press 'N' to advance to next level (for testing)
+                this.level++;
+                this.player.updateMolecule(this.level);
+                this.hud.updateLevel(this.level);
+                this.hud.updatePlayerMolecule(this.player.moleculeData);
+                console.log(`Debug: Advanced to level ${this.level} - ${this.player.moleculeData.name}`);
+            }
+            
+            if (e.code === 'KeyP' && this.running) {
+                // Press 'P' to go to previous level (for testing)
+                this.level = Math.max(1, this.level - 1);
+                this.player.updateMolecule(this.level);
+                this.hud.updateLevel(this.level);
+                this.hud.updatePlayerMolecule(this.player.moleculeData);
+                console.log(`Debug: Went back to level ${this.level} - ${this.player.moleculeData.name}`);
             }
         });
         
@@ -131,9 +152,13 @@ class Game {
         this.spawnRate = 1800;
         
         this.player.reset(80, this.height - 70);
+        // Update player molecule to level 1
+        this.player.updateMolecule(this.level);
         
         if (this.hud) {
             this.hud.reset();
+            // Update HUD to show initial molecule
+            this.hud.updatePlayerMolecule(this.player.moleculeData);
         }
         
         console.log('Game reset!');
@@ -231,11 +256,15 @@ class Game {
         this.speed += 0.002;
         this.spawnRate = Math.max(800, this.spawnRate - 0.5);
         
-        // Level progression
-        const newLevel = Math.floor(this.score / 500) + 1;
+        // Level progression (faster progression to see molecules change)
+        const newLevel = Math.floor(this.score / 200) + 1; // Reduced from 500 to 200
         if (newLevel > this.level) {
             this.level = newLevel;
             this.hud.updateLevel(this.level);
+            // Update player molecule for new level
+            this.player.updateMolecule(this.level);
+            // Update HUD to show new molecule
+            this.hud.updatePlayerMolecule(this.player.moleculeData);
         }
         
         // Update HUD
