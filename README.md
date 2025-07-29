@@ -1,6 +1,6 @@
 # Chemistry Dash 🧪
 
-A Geometry Dash-inspired browser game with a chemistry theme! Navigate through a chemistry lab as a carbon atom, collecting elements and avoiding dangerous lab equipment.
+A browser game with a chemistry theme! Navigate through a chemistry lab as a carbon atom, collecting elements and avoiding dangerous lab equipment.
 
 ## 🎮 Gameplay
 
@@ -12,7 +12,6 @@ A Geometry Dash-inspired browser game with a chemistry theme! Navigate through a
 ## 🧬 Features
 
 - **Chemistry Theme**: Play as a carbon atom collecting periodic table elements
-- **Double Jump Mechanics**: Enhanced movement inspired by Geometry Dash
 - **Molecule Formation**: Collect elements to form real chemical compounds (H2O, CO2, etc.)
 - **Progressive Difficulty**: Game speed increases over time
 - **Visual Effects**: Particle effects, glowing elements, and smooth animations
@@ -45,7 +44,7 @@ python -m http.server 8000
 
 ### Player Character
 - Carbon atom with animated eyes and chemistry lab coat aesthetic
-- Rotates while jumping (Geometry Dash style)
+- Rotates while jumping
 - Glows brighter when double jump is available
 
 ### Obstacles
