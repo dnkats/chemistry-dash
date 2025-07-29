@@ -34,13 +34,6 @@ class HUD {
                 <span class="hud-label">Elements:</span>
                 <div id="collected-elements" class="collected-elements"></div>
             </div>
-            <div class="molecule-display">
-                <h4>Current Molecule</h4>
-                <div id="molecule-info">
-                    <div id="molecule-formula">No elements</div>
-                    <div id="molecule-name">Start collecting!</div>
-                </div>
-            </div>
             <div class="debug-controls" style="font-size: 10px; color: #888; margin-top: 10px;">
                 Debug: Press N/P to advance/go back levels
             </div>
@@ -122,27 +115,9 @@ class HUD {
         }
     }
     
-    // Update molecule display
+    // Update molecule display (removed from UI)
     updateMoleculeDisplay() {
-        const formulaElement = document.getElementById('molecule-formula');
-        const nameElement = document.getElementById('molecule-name');
-        
-        if (this.currentMolecule.elements.length === 0) {
-            formulaElement.textContent = 'No elements';
-            nameElement.textContent = 'Start collecting!';
-        } else {
-            formulaElement.textContent = this.currentMolecule.formula;
-            nameElement.textContent = this.currentMolecule.name;
-            
-            // Add special styling for known compounds
-            if (this.currentMolecule.isKnownCompound()) {
-                formulaElement.style.color = '#4ecca3';
-                nameElement.style.color = '#4ecca3';
-            } else {
-                formulaElement.style.color = '#ffffff';
-                nameElement.style.color = '#cccccc';
-            }
-        }
+        // This method is intentionally empty since we removed the molecule display from the UI
     }
     
     // Reset HUD for new game

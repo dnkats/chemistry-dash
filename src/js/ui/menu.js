@@ -127,33 +127,60 @@ class Menu {
     }
     
     // Show game over screen with results
-    showGameOver(score, level, collectedElements, finalMolecule) {
-        this.updateGameOverDisplay(score, level, collectedElements, finalMolecule);
+    showGameOver(score, level, collectedElements, finalMolecule, formedMolecules = []) {
+        this.updateGameOverDisplay(score, level, collectedElements, finalMolecule, formedMolecules);
         this.showMenu('game-over-menu');
     }
     
     // Update game over display with results
-    updateGameOverDisplay(score, level, collectedElements, finalMolecule) {
+    updateGameOverDisplay(score, level, collectedElements, finalMolecule, formedMolecules = []) {
         const finalScoreEl = document.getElementById('final-score');
         const finalLevelEl = document.getElementById('final-level');
         
         if (finalScoreEl) finalScoreEl.textContent = `Score: ${score.toLocaleString()}`;
         if (finalLevelEl) finalLevelEl.textContent = `Level: ${level}`;
         
-        // Update molecule summary
+        // Update molecule summary to show formed molecules and remaining atoms
         const moleculeSummary = document.getElementById('molecule-summary');
         if (moleculeSummary) {
+            let summaryHTML = '';
+            
+            // Show formed molecules (compounds)
+            if (formedMolecules.length > 0) {
+                summaryHTML += `<div style="margin-bottom: 15px;"><strong>Formed Molecules (${formedMolecules.length}):</strong></div>`;
+                formedMolecules.forEach(molecule => {
+                    summaryHTML += `
+                        <div style="background: rgba(78, 204, 163, 0.1); border: 1px solid #4ecca3; border-radius: 5px; padding: 8px; margin: 5px 0;">
+                            <div style="font-size: 16px; color: #4ecca3;">${molecule.formula}</div>
+                            <div style="font-size: 12px; color: #cccccc;">${molecule.name}</div>
+                            <div style="font-size: 10px; color: #aaa;">+${molecule.points} points</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            // Show remaining individual atoms
             if (finalMolecule && finalMolecule.elements.length > 0) {
-                moleculeSummary.innerHTML = `
-                    <div style="font-size: 20px; margin-bottom: 10px;">${finalMolecule.formula}</div>
-                    <div>${finalMolecule.name}</div>
-                    <div style="color: #aaa; font-size: 12px;">
-                        ${finalMolecule.elements.length} atoms
+                if (formedMolecules.length > 0) {
+                    summaryHTML += '<div style="margin: 15px 0 10px 0;"><strong>Remaining Atoms:</strong></div>';
+                }
+                summaryHTML += `
+                    <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid #666; border-radius: 5px; padding: 8px;">
+                        <div style="font-size: 16px; color: #ffffff;">${finalMolecule.formula}</div>
+                        <div style="font-size: 12px; color: #cccccc;">${finalMolecule.name}</div>
+                        <div style="color: #aaa; font-size: 10px;">
+                            ${finalMolecule.elements.length} atoms
+                        </div>
                     </div>
                 `;
-            } else {
-                moleculeSummary.textContent = 'No elements collected';
             }
+            
+            // If no molecules were formed and no atoms collected
+            if (formedMolecules.length === 0 && (!finalMolecule || finalMolecule.elements.length === 0)) {
+                summaryHTML = '<div style="color: #aaa;">No elements collected</div>';
+            }
+            
+            moleculeSummary.innerHTML = summaryHTML;
         }
     }
     

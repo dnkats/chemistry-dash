@@ -14,6 +14,7 @@ class Game {
         this.obstacles = [];
         this.elements = [];
         this.collectedElements = [];
+        this.formedMolecules = []; // Track all molecules formed during the game
         
         this.score = 0;
         this.speed = 4; // Slightly faster base speed
@@ -149,6 +150,8 @@ class Game {
         this.obstacles = [];
         this.elements = [];
         this.collectedElements = [];
+        this.formedMolecules = []; // Reset formed molecules
+        this.compoundNotifications = []; // Reset compound notifications
         this.score = 0;
         this.speed = 4;
         this.level = 1;
@@ -479,6 +482,9 @@ class Game {
             const formedMolecule = moleculeResult.molecules[0];
             this.score += formedMolecule.points;
             
+            // Store the formed molecule
+            this.formedMolecules.push(formedMolecule);
+            
             // Update collected elements to remove used atoms
             this.collectedElements = moleculeResult.remainingElements;
             
@@ -490,6 +496,7 @@ class Game {
             
             console.log(`Molecule formed: ${formedMolecule.formula} - ${formedMolecule.name} (+${formedMolecule.points} points)`);
             console.log(`Elements used: ${moleculeResult.elementsUsed}, Remaining: ${this.collectedElements.length}`);
+            console.log(`Total formed molecules: ${this.formedMolecules.length}`);
         }
     }
     
@@ -499,13 +506,15 @@ class Game {
         console.log('Game Over!');
         console.log(`Final Score: ${this.score}`);
         console.log(`Elements Collected: ${this.collectedElements.length}`);
+        console.log(`Formed Molecules: ${this.formedMolecules.length}`, this.formedMolecules);
         
         // Show game over menu
         this.menu.showGameOver(
             this.score,
             this.level,
             this.collectedElements,
-            this.hud.currentMolecule
+            this.hud.currentMolecule,
+            this.formedMolecules
         );
     }
 }

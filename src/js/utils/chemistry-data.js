@@ -289,10 +289,38 @@ const ChemistryData = {
         };
     },
     
-    // Get random element for spawning
+    // Get random element for spawning (with weighted probabilities)
     getRandomElement: function() {
+        // Define weights for common elements (higher weight = more likely to spawn)
+        const elementWeights = {
+            'H': 5,  // Hydrogen - very common
+            'C': 4,  // Carbon - very common  
+            'O': 4,  // Oxygen - very common
+            'N': 2,  // Nitrogen - common
+            'Cl': 2, // Chlorine - common
+            'Na': 2, // Sodium - common
+            'Ca': 2, // Calcium - common
+            'S': 1.5, // Sulfur - somewhat common
+            'P': 1.5, // Phosphorus - somewhat common
+            'K': 1.5, // Potassium - somewhat common
+            'Mg': 1.5, // Magnesium - somewhat common
+        };
+        
+        // Create weighted array
+        const weightedElements = [];
         const elementKeys = Object.keys(this.elements);
-        const randomKey = elementKeys[Math.floor(Math.random() * elementKeys.length)];
+        
+        elementKeys.forEach(elementKey => {
+            const weight = elementWeights[elementKey] || 1; // Default weight is 1
+            // Add element multiple times based on weight (multiply by 10 for integer weights)
+            const count = Math.round(weight * 10);
+            for (let i = 0; i < count; i++) {
+                weightedElements.push(elementKey);
+            }
+        });
+        
+        // Select random element from weighted array
+        const randomKey = weightedElements[Math.floor(Math.random() * weightedElements.length)];
         return {
             symbol: randomKey,
             data: this.elements[randomKey]
