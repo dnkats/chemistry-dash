@@ -4,12 +4,14 @@ class Menu {
         this.currentMenu = 'start';
         this.gameInstance = null;
         this.menuInitialized = false;
+        this.selectedDifficulty = 'medium'; // Default difficulty
     }
     
     initializeMenus() {
         if (this.menuInitialized) return;
         
         this.createStartMenu();
+        this.createDifficultyMenu();
         this.createGameOverMenu();
         this.setupEventListeners();
         this.menuInitialized = true;
@@ -29,10 +31,48 @@ class Menu {
                 <p>• Avoid chemistry lab obstacles</p>
                 <p>• Form known compounds for bonus points!</p>
             </div>
-            <button id="start-button">Start Game</button>
+            <button id="select-difficulty-button">Select Difficulty</button>
         `;
         
         document.getElementById('game-container').appendChild(startMenu);
+    }
+    
+    createDifficultyMenu() {
+        const difficultyMenu = document.createElement('div');
+        difficultyMenu.className = 'menu-screen';
+        difficultyMenu.id = 'difficulty-menu';
+        difficultyMenu.innerHTML = `
+            <h2>🎚️ Select Difficulty 🎚️</h2>
+            <div class="difficulty-options">
+                <div class="difficulty-option" data-difficulty="easy">
+                    <h3>🟢 Easy</h3>
+                    <p>• Slower obstacles</p>
+                    <p>• More common elements (H, C, O)</p>
+                    <p>• Lower spawn rate</p>
+                    <p>• Perfect for learning!</p>
+                </div>
+                <div class="difficulty-option selected" data-difficulty="medium">
+                    <h3>🟡 Medium</h3>
+                    <p>• Balanced gameplay</p>
+                    <p>• Standard element distribution</p>
+                    <p>• Normal obstacle speed</p>
+                    <p>• Recommended for most players</p>
+                </div>
+                <div class="difficulty-option" data-difficulty="hard">
+                    <h3>🔴 Hard</h3>
+                    <p>• Fast obstacles</p>
+                    <p>• More rare elements</p>
+                    <p>• Higher spawn rate</p>
+                    <p>• For chemistry experts!</p>
+                </div>
+            </div>
+            <div class="difficulty-buttons">
+                <button id="start-game-button">Start Game</button>
+                <button id="back-to-menu-button">Back</button>
+            </div>
+        `;
+        
+        document.getElementById('game-container').appendChild(difficultyMenu);
     }
     
     createGameOverMenu() {
@@ -58,13 +98,41 @@ class Menu {
     
     setupEventListeners() {
         // Start menu buttons
-        const startButton = document.getElementById('start-button');
-        if (startButton) {
-            startButton.addEventListener('click', () => {
-                console.log('Start button clicked');
+        const selectDifficultyButton = document.getElementById('select-difficulty-button');
+        if (selectDifficultyButton) {
+            selectDifficultyButton.addEventListener('click', () => {
+                this.showMenu('difficulty-menu');
+            });
+        }
+        
+        // Difficulty menu buttons
+        const startGameButton = document.getElementById('start-game-button');
+        if (startGameButton) {
+            startGameButton.addEventListener('click', () => {
                 this.startGame();
             });
         }
+        
+        const backToMenuButton = document.getElementById('back-to-menu-button');
+        if (backToMenuButton) {
+            backToMenuButton.addEventListener('click', () => {
+                this.showMainMenu();
+            });
+        }
+        
+        // Difficulty option selection
+        const difficultyOptions = document.querySelectorAll('.difficulty-option');
+        difficultyOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                // Remove selected class from all options
+                difficultyOptions.forEach(opt => opt.classList.remove('selected'));
+                // Add selected class to clicked option
+                option.classList.add('selected');
+                // Store selected difficulty
+                this.selectedDifficulty = option.dataset.difficulty;
+                console.log('Difficulty selected:', this.selectedDifficulty);
+            });
+        });
         
         // Game over menu buttons
         const restartButton = document.getElementById('restart-button');
@@ -102,9 +170,10 @@ class Menu {
     
     // Start the game
     startGame() {
-        console.log('Menu: Starting game...');
+        console.log('Menu: Starting game with difficulty:', this.selectedDifficulty);
         this.hideAllMenus();
         if (this.gameInstance) {
+            this.gameInstance.setDifficulty(this.selectedDifficulty);
             this.gameInstance.start();
         }
     }
@@ -113,6 +182,7 @@ class Menu {
     restartGame() {
         this.hideAllMenus();
         if (this.gameInstance) {
+            this.gameInstance.setDifficulty(this.selectedDifficulty);
             this.gameInstance.reset();
             this.gameInstance.start();
         }

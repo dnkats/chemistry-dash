@@ -23,6 +23,10 @@ class HUD {
                 <span id="level-value">1</span>
             </div>
             <div class="hud-item">
+                <span class="hud-label">Difficulty:</span>
+                <span id="difficulty-value">Medium</span>
+            </div>
+            <div class="hud-item">
                 <span class="hud-label">Speed:</span>
                 <span id="speed-value">0</span>
             </div>
@@ -66,6 +70,16 @@ class HUD {
         document.getElementById('speed-value').textContent = this.speed;
     }
     
+    // Update difficulty display
+    updateDifficulty(difficulty) {
+        const difficultyNames = {
+            easy: '🟢 Easy',
+            medium: '🟡 Medium', 
+            hard: '🔴 Hard'
+        };
+        document.getElementById('difficulty-value').textContent = difficultyNames[difficulty] || difficulty;
+    }
+
     // Add collected element
     addElement(elementSymbol) {
         this.collectedElements.push(elementSymbol);

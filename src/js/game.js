@@ -25,6 +25,7 @@ class Game {
         this.running = false;
         this.paused = false;
         this.level = 1;
+        this.difficulty = 'medium'; // Default difficulty
         
         this.hud = null;
         this.menu = null;
@@ -37,6 +38,44 @@ class Game {
         this.compoundNotifications = [];
     }
     
+    // Set game difficulty
+    setDifficulty(difficulty) {
+        this.difficulty = difficulty;
+        const settings = this.getDifficultySettings(difficulty);
+        this.speed = settings.baseSpeed;
+        this.spawnRate = settings.spawnRate;
+        
+        // Update HUD to show difficulty
+        if (this.hud) {
+            this.hud.updateDifficulty(difficulty);
+        }
+        
+        console.log(`Difficulty set to ${difficulty}:`, settings);
+    }
+    
+    // Get difficulty-specific settings
+    getDifficultySettings(difficulty) {
+        const settings = {
+            easy: {
+                baseSpeed: 3,
+                spawnRate: 2400, // Slower spawning
+                elementWeightMultiplier: 2 // More common elements
+            },
+            medium: {
+                baseSpeed: 4,
+                spawnRate: 1800, // Normal spawning
+                elementWeightMultiplier: 1 // Normal distribution
+            },
+            hard: {
+                baseSpeed: 5.5,
+                spawnRate: 1200, // Faster spawning
+                elementWeightMultiplier: 0.7 // More rare elements
+            }
+        };
+        
+        return settings[difficulty] || settings.medium;
+    }
+
     init() {
         console.log('Game: Initializing...');
         
@@ -153,9 +192,12 @@ class Game {
         this.formedMolecules = []; // Reset formed molecules
         this.compoundNotifications = []; // Reset compound notifications
         this.score = 0;
-        this.speed = 4;
         this.level = 1;
-        this.spawnRate = 1800;
+        
+        // Reset speed and spawn rate based on current difficulty
+        const settings = this.getDifficultySettings(this.difficulty);
+        this.speed = settings.baseSpeed;
+        this.spawnRate = settings.spawnRate;
         
         this.player.reset(80, this.height - 70);
         // Update player molecule to level 1
@@ -163,8 +205,9 @@ class Game {
         
         if (this.hud) {
             this.hud.reset();
-            // Update HUD to show initial molecule
+            // Update HUD to show initial molecule and difficulty
             this.hud.updatePlayerMolecule(this.player.moleculeData);
+            this.hud.updateDifficulty(this.difficulty);
         }
         
         console.log('Game reset!');
@@ -450,8 +493,8 @@ class Game {
     }
     
     spawnElement() {
-        // Get random element
-        const randomElement = ChemistryData.getRandomElement();
+        // Get random element with difficulty consideration
+        const randomElement = ChemistryData.getRandomElement(this.difficulty);
         
         // Make elements more accessible - spawn at various heights
         const elementHeight = 50 + Math.random() * 150; // Higher up for jumping to collect

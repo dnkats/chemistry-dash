@@ -290,9 +290,9 @@ const ChemistryData = {
     },
     
     // Get random element for spawning (with weighted probabilities)
-    getRandomElement: function() {
-        // Define weights for common elements (higher weight = more likely to spawn)
-        const elementWeights = {
+    getRandomElement: function(difficulty = 'medium') {
+        // Base weights for common elements
+        const baseElementWeights = {
             'H': 5,  // Hydrogen - very common
             'C': 4,  // Carbon - very common  
             'O': 4,  // Oxygen - very common
@@ -305,6 +305,21 @@ const ChemistryData = {
             'K': 1.5, // Potassium - somewhat common
             'Mg': 1.5, // Magnesium - somewhat common
         };
+        
+        // Adjust weights based on difficulty
+        const difficultyMultipliers = {
+            easy: 2,     // Make common elements even more common
+            medium: 1,   // Normal weights
+            hard: 0.7    // Make common elements less common (more rare elements)
+        };
+        
+        const multiplier = difficultyMultipliers[difficulty] || 1;
+        const elementWeights = {};
+        
+        // Apply difficulty multiplier to base weights
+        Object.keys(baseElementWeights).forEach(element => {
+            elementWeights[element] = baseElementWeights[element] * multiplier;
+        });
         
         // Create weighted array
         const weightedElements = [];

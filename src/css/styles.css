@@ -118,6 +118,62 @@ button:hover {
     font-weight: bold;
 }
 
+/* Difficulty Menu Styles */
+.difficulty-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 30px 0;
+    max-width: 600px;
+}
+
+.difficulty-option {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.difficulty-option:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(78, 204, 163, 0.7);
+    transform: translateY(-2px);
+}
+
+.difficulty-option.selected {
+    background: rgba(78, 204, 163, 0.2);
+    border-color: #4ecca3;
+    box-shadow: 0 0 20px rgba(78, 204, 163, 0.3);
+}
+
+.difficulty-option h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.5em;
+    color: #4ecca3;
+}
+
+.difficulty-option p {
+    margin: 5px 0;
+    color: #cccccc;
+    font-size: 0.9em;
+}
+
+.difficulty-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.difficulty-buttons button {
+    padding: 12px 30px;
+    font-size: 1.1em;
+    min-width: 120px;
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
     #game-canvas {
