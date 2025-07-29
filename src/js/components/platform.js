@@ -168,16 +168,27 @@ class Platform {
         const playerBounds = player.getBounds();
         const platformBounds = this.getBounds();
         
-        // Check if player is above platform and falling
-        return player.velocityY > 0 && 
-               playerBounds.x < platformBounds.x + platformBounds.width &&
-               playerBounds.x + playerBounds.width > platformBounds.x &&
-               playerBounds.y + playerBounds.height > platformBounds.y &&
-               playerBounds.y + playerBounds.height < platformBounds.y + platformBounds.height/2;
+        // Check horizontal overlap first
+        const horizontalOverlap = playerBounds.x < platformBounds.x + platformBounds.width &&
+                                  playerBounds.x + playerBounds.width > platformBounds.x;
+        
+        if (!horizontalOverlap) return false;
+        
+        // Check if player is falling (positive velocity)
+        if (player.velocityY <= 0) return false;
+        
+        // Check if player's previous position was above the platform
+        const playerPreviousBottom = playerBounds.y + playerBounds.height - player.velocityY;
+        const playerCurrentBottom = playerBounds.y + playerBounds.height;
+        const platformTop = platformBounds.y;
+        
+        // Player should have been above platform in previous frame and now intersecting or below
+        return playerPreviousBottom <= platformTop && playerCurrentBottom >= platformTop;
     }
     
     // Handle landing on platform
     handleLanding(player) {
+        // Snap player to platform surface
         player.y = this.y - player.height;
         player.velocityY = 0;
         player.grounded = true;

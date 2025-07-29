@@ -116,6 +116,12 @@ class Game {
                 this.player.jump();
             }
             
+            // Pause/Resume game with P key or Escape
+            if ((e.code === 'KeyP' || e.code === 'Escape') && this.running) {
+                e.preventDefault();
+                this.togglePause();
+            }
+            
             // Debug controls for testing molecule progression
             if (e.code === 'KeyN' && this.running) {
                 // Press 'N' to advance to next level (for testing)
@@ -124,15 +130,6 @@ class Game {
                 this.hud.updateLevel(this.level);
                 this.hud.updatePlayerMolecule(this.player.moleculeData);
                 console.log(`Debug: Advanced to level ${this.level} - ${this.player.moleculeData.name}`);
-            }
-            
-            if (e.code === 'KeyP' && this.running) {
-                // Press 'P' to go to previous level (for testing)
-                this.level = Math.max(1, this.level - 1);
-                this.player.updateMolecule(this.level);
-                this.hud.updateLevel(this.level);
-                this.hud.updatePlayerMolecule(this.player.moleculeData);
-                console.log(`Debug: Went back to level ${this.level} - ${this.player.moleculeData.name}`);
             }
         });
         
@@ -180,11 +177,23 @@ class Game {
         this.paused = true;
     }
     
-    resume() {
-        console.log('Game: Resuming...');
-        this.paused = false;
-        this.lastTime = performance.now();
-        requestAnimationFrame((time) => this.gameLoop(time));
+    // Toggle pause state
+    togglePause() {
+        this.paused = !this.paused;
+        
+        if (this.paused) {
+            console.log('Game paused');
+        } else {
+            console.log('Game resumed');
+            // Reset timing to prevent time jump when resuming
+            this.lastTime = performance.now();
+            this.accumulator = 0; // Reset accumulator to prevent frame skipping
+        }
+        
+        // Update HUD to show pause state
+        if (this.hud) {
+            this.hud.updatePauseState(this.paused);
+        }
     }
     
     reset() {
@@ -196,6 +205,7 @@ class Game {
         this.compoundNotifications = []; // Reset compound notifications
         this.score = 0;
         this.level = 1;
+        this.paused = false; // Reset pause state
         
         // Reset speed and spawn rate based on current difficulty
         const settings = this.getDifficultySettings(this.difficulty);
@@ -235,7 +245,16 @@ class Game {
 
     gameLoop(currentTime) {
         if (!this.running) return;
-        if (this.paused) return;
+        
+        // Always continue the animation loop, even when paused
+        requestAnimationFrame((time) => this.gameLoop(time));
+        
+        // Only update and render when not paused
+        if (this.paused) {
+            // Still render when paused to show the pause screen
+            this.render();
+            return;
+        }
         
         // Calculate delta time
         const deltaTime = currentTime - this.lastTime;
@@ -251,16 +270,50 @@ class Game {
         }
         
         this.render();
-        
-        requestAnimationFrame((time) => this.gameLoop(time));
     }
     
     update(deltaTime) {
         // Update player
         this.player.update(deltaTime);
         
-        // Handle ground collision
-        if (this.player.y + this.player.height > this.height - 20) {
+        // Check platform collisions first (they have priority over ground)
+        let onPlatform = false;
+        for (let i = this.platforms.length - 1; i >= 0; i--) {
+            const platform = this.platforms[i];
+            platform.update(deltaTime, this.speed);
+            
+            // Remove off-screen platforms
+            if (platform.isOffScreen()) {
+                this.platforms.splice(i, 1);
+                continue;
+            }
+            
+            // Check if player can land on platform (landing collision)
+            if (platform.canLandOn(this.player)) {
+                platform.handleLanding(this.player);
+                onPlatform = true;
+                break; // Only land on one platform at a time
+            }
+            // Also check if player is already on platform and prevent falling through
+            else if (this.player.grounded && Physics.checkCollision(this.player.getBounds(), platform.getBounds())) {
+                // If player is overlapping with platform and grounded, keep them on top
+                const playerBounds = this.player.getBounds();
+                const platformBounds = platform.getBounds();
+                
+                // Check if player is horizontally aligned and close to platform top
+                const horizontalOverlap = playerBounds.x < platformBounds.x + platformBounds.width &&
+                                          playerBounds.x + playerBounds.width > platformBounds.x;
+                
+                if (horizontalOverlap && Math.abs(playerBounds.y + playerBounds.height - platformBounds.y) < 10) {
+                    platform.handleLanding(this.player);
+                    onPlatform = true;
+                    break;
+                }
+            }
+        }
+        
+        // Handle ground collision only if not on a platform
+        if (!onPlatform && this.player.y + this.player.height > this.height - 20) {
             this.player.y = this.height - 20 - this.player.height;
             if (!this.player.grounded) {
                 // Just landed, reset jumps
@@ -326,23 +379,6 @@ class Game {
             if (Physics.checkCollision(this.player.getBounds(), element.getBounds())) {
                 this.collectElement(element);
                 this.elements.splice(i, 1);
-            }
-        }
-        
-        // Update platforms
-        for (let i = this.platforms.length - 1; i >= 0; i--) {
-            const platform = this.platforms[i];
-            platform.update(deltaTime, this.speed);
-            
-            // Remove off-screen platforms
-            if (platform.isOffScreen()) {
-                this.platforms.splice(i, 1);
-                continue;
-            }
-            
-            // Check if player can land on platform
-            if (platform.canLandOn(this.player)) {
-                platform.handleLanding(this.player);
             }
         }
         

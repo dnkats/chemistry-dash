@@ -38,8 +38,8 @@ class HUD {
                 <span class="hud-label">Elements:</span>
                 <div id="collected-elements" class="collected-elements"></div>
             </div>
-            <div class="debug-controls" style="font-size: 10px; color: #888; margin-top: 10px;">
-                Debug: Press N/P to advance/go back levels
+            <div class="controls-info" style="font-size: 12px; color: #888; margin-top: 10px; border-top: 1px solid #444; padding-top: 8px;">
+                Controls: SPACE/↑ = Jump | P/ESC = Pause
             </div>
         `;
     }
@@ -148,6 +148,7 @@ class HUD {
         this.updateSpeed(0);
         this.updateElementsDisplay();
         this.updateMoleculeDisplay();
+        this.updatePauseState(false); // Clear pause indicator
     }
     
     // Get contrast color for text
@@ -158,5 +159,25 @@ class HUD {
         const b = parseInt(hexColor.substr(5, 2), 16);
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
         return brightness > 128 ? '#000000' : '#ffffff';
+   }
+
+    // Update pause state display
+    updatePauseState(isPaused) {
+        // Add or remove pause indicator
+        let pauseIndicator = document.getElementById('pause-indicator');
+        
+        if (isPaused) {
+            if (!pauseIndicator) {
+                pauseIndicator = document.createElement('div');
+                pauseIndicator.id = 'pause-indicator';
+                pauseIndicator.className = 'pause-indicator';
+                pauseIndicator.innerHTML = '⏸️ PAUSED - Press P or ESC to resume';
+                this.hudElement.appendChild(pauseIndicator);
+            }
+        } else {
+            if (pauseIndicator) {
+                pauseIndicator.remove();
+            }
+        }
     }
 }

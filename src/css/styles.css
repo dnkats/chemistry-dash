@@ -174,6 +174,36 @@ button:hover {
     min-width: 120px;
 }
 
+/* Pause indicator styles */
+.pause-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: #4ecca3;
+    padding: 20px 40px;
+    border-radius: 15px;
+    border: 3px solid #4ecca3;
+    font-size: 1.5em;
+    font-weight: bold;
+    text-align: center;
+    z-index: 1000;
+    box-shadow: 0 0 30px rgba(78, 204, 163, 0.8);
+    animation: pausePulse 2s infinite;
+}
+
+@keyframes pausePulse {
+    0%, 100% { 
+        box-shadow: 0 0 30px rgba(78, 204, 163, 0.8);
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% { 
+        box-shadow: 0 0 40px rgba(78, 204, 163, 1);
+        transform: translate(-50%, -50%) scale(1.05);
+    }
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
     #game-canvas {
