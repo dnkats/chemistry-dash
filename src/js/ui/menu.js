@@ -5,6 +5,7 @@ class Menu {
         this.gameInstance = null;
         this.menuInitialized = false;
         this.selectedDifficulty = 'medium'; // Default difficulty
+        this.highScoreManager = new HighScoreManager();
     }
     
     initializeMenus() {
@@ -12,6 +13,7 @@ class Menu {
         
         this.createStartMenu();
         this.createDifficultyMenu();
+        this.createHighScoreMenu();
         this.createGameOverMenu();
         this.setupEventListeners();
         this.menuInitialized = true;
@@ -31,7 +33,8 @@ class Menu {
                 <p>• Avoid chemistry lab obstacles</p>
                 <p>• Form known compounds for bonus points!</p>
             </div>
-            <button id="select-difficulty-button">Select Difficulty</button>
+            <button id="select-difficulty-button">Start Game</button>
+            <button id="view-highscores-button">High Scores</button>
         `;
         
         document.getElementById('game-container').appendChild(startMenu);
@@ -74,13 +77,48 @@ class Menu {
         
         document.getElementById('game-container').appendChild(difficultyMenu);
     }
-    
+
+    createHighScoreMenu() {
+        const highScoreMenu = document.createElement('div');
+        highScoreMenu.className = 'menu-screen';
+        highScoreMenu.id = 'highscore-menu';
+        highScoreMenu.innerHTML = `
+            <h2>🏆 High Scores 🏆</h2>
+            <div class="highscore-filters">
+                <button class="difficulty-filter active" data-filter="all">All</button>
+                <button class="difficulty-filter" data-filter="easy">🟢 Easy</button>
+                <button class="difficulty-filter" data-filter="medium">🟡 Medium</button>
+                <button class="difficulty-filter" data-filter="hard">🔴 Hard</button>
+            </div>
+            <div id="highscore-list" class="highscore-list">
+                <!-- High scores will be populated here -->
+            </div>
+            <div class="highscore-stats" id="highscore-stats">
+                <!-- Stats will be populated here -->
+            </div>
+            <div class="menu-buttons">
+                <button id="clear-scores-button" style="background-color: #dc3545;">Clear Scores</button>
+                <button id="back-from-highscores-button">Back to Menu</button>
+            </div>
+        `;
+        
+        document.getElementById('game-container').appendChild(highScoreMenu);
+    }
+
     createGameOverMenu() {
         const gameOverMenu = document.createElement('div');
         gameOverMenu.className = 'menu-screen';
         gameOverMenu.id = 'game-over-menu';
         gameOverMenu.innerHTML = `
             <h2>⚗️ Lab Accident! ⚗️</h2>
+            <div id="highscore-notification" class="highscore-notification" style="display: none;">
+                <h3>🎉 New High Score! 🎉</h3>
+                <div id="highscore-rank"></div>
+                <div style="margin: 10px 0;">
+                    <input type="text" id="player-name-input" placeholder="Enter your name" maxlength="20" style="padding: 8px; border: 1px solid #666; background: #333; color: white; border-radius: 4px;">
+                    <button id="save-highscore-button" style="margin-left: 8px;">Save</button>
+                </div>
+            </div>
             <div id="final-score-display">
                 <div id="final-score">Score: 0</div>
                 <div id="final-level">Level: 1</div>
@@ -89,6 +127,7 @@ class Menu {
                 <h3>Your Final Molecule</h3>
                 <div id="molecule-summary">No elements collected</div>
             </div>
+            <button id="view-scores-button">View High Scores</button>
             <button id="restart-button">Try Again</button>
             <button id="main-menu-button">Main Menu</button>
         `;
@@ -102,6 +141,13 @@ class Menu {
         if (selectDifficultyButton) {
             selectDifficultyButton.addEventListener('click', () => {
                 this.showMenu('difficulty-menu');
+            });
+        }
+
+        const viewHighscoresButton = document.getElementById('view-highscores-button');
+        if (viewHighscoresButton) {
+            viewHighscoresButton.addEventListener('click', () => {
+                this.showHighScores();
             });
         }
         
@@ -133,6 +179,34 @@ class Menu {
                 console.log('Difficulty selected:', this.selectedDifficulty);
             });
         });
+
+        // High score menu buttons
+        const backFromHighscoresButton = document.getElementById('back-from-highscores-button');
+        if (backFromHighscoresButton) {
+            backFromHighscoresButton.addEventListener('click', () => {
+                this.showMainMenu();
+            });
+        }
+
+        const clearScoresButton = document.getElementById('clear-scores-button');
+        if (clearScoresButton) {
+            clearScoresButton.addEventListener('click', () => {
+                if (confirm('Are you sure you want to clear all high scores? This cannot be undone.')) {
+                    this.highScoreManager.clearHighScores();
+                    this.updateHighScoreDisplay();
+                }
+            });
+        }
+
+        // Difficulty filter buttons
+        const difficultyFilters = document.querySelectorAll('.difficulty-filter');
+        difficultyFilters.forEach(filter => {
+            filter.addEventListener('click', () => {
+                difficultyFilters.forEach(f => f.classList.remove('active'));
+                filter.classList.add('active');
+                this.updateHighScoreDisplay(filter.dataset.filter);
+            });
+        });
         
         // Game over menu buttons
         const restartButton = document.getElementById('restart-button');
@@ -146,6 +220,30 @@ class Menu {
         if (mainMenuButton) {
             mainMenuButton.addEventListener('click', () => {
                 this.showMainMenu();
+            });
+        }
+
+        const viewScoresButton = document.getElementById('view-scores-button');
+        if (viewScoresButton) {
+            viewScoresButton.addEventListener('click', () => {
+                this.showHighScores();
+            });
+        }
+
+        // High score save functionality
+        const saveHighscoreButton = document.getElementById('save-highscore-button');
+        if (saveHighscoreButton) {
+            saveHighscoreButton.addEventListener('click', () => {
+                this.saveHighScore();
+            });
+        }
+
+        const playerNameInput = document.getElementById('player-name-input');
+        if (playerNameInput) {
+            playerNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.saveHighScore();
+                }
             });
         }
     }
@@ -198,8 +296,138 @@ class Menu {
     
     // Show game over screen with results
     showGameOver(score, level, collectedElements, finalMolecule, formedMolecules = []) {
+        // Check if this is a high score
+        const scoreData = {
+            score: score,
+            level: level,
+            difficulty: this.selectedDifficulty,
+            formedMolecules: formedMolecules,
+            elementsCollected: collectedElements ? collectedElements.length : 0
+        };
+
+        const isHighScore = this.highScoreManager.isHighScore(score);
+        
         this.updateGameOverDisplay(score, level, collectedElements, finalMolecule, formedMolecules);
+        
+        // Show high score notification if applicable
+        if (isHighScore) {
+            this.showHighScoreNotification(scoreData);
+        }
+        
         this.showMenu('game-over-menu');
+    }
+
+    // Show high score notification
+    showHighScoreNotification(scoreData) {
+        const notification = document.getElementById('highscore-notification');
+        const rankElement = document.getElementById('highscore-rank');
+        const nameInput = document.getElementById('player-name-input');
+        
+        if (notification && rankElement && nameInput) {
+            // Calculate what rank this would be
+            const tempScores = [...this.highScoreManager.getHighScores(), { score: scoreData.score }];
+            tempScores.sort((a, b) => b.score - a.score);
+            const rank = tempScores.findIndex(s => s.score === scoreData.score) + 1;
+            
+            rankElement.textContent = `Rank #${rank} with ${this.highScoreManager.formatScore(scoreData.score)} points!`;
+            nameInput.value = '';
+            nameInput.focus();
+            notification.style.display = 'block';
+            
+            // Store score data for saving
+            this.pendingHighScore = scoreData;
+        }
+    }
+
+    // Save high score with player name
+    saveHighScore() {
+        const nameInput = document.getElementById('player-name-input');
+        const notification = document.getElementById('highscore-notification');
+        
+        if (this.pendingHighScore && nameInput) {
+            const playerName = nameInput.value.trim() || 'Anonymous';
+            this.pendingHighScore.playerName = playerName;
+            
+            this.highScoreManager.addScore(this.pendingHighScore);
+            
+            if (notification) {
+                notification.style.display = 'none';
+            }
+            
+            this.pendingHighScore = null;
+        }
+    }
+
+    // Show high scores menu
+    showHighScores() {
+        this.updateHighScoreDisplay();
+        this.showMenu('highscore-menu');
+    }
+
+    // Update high score display
+    updateHighScoreDisplay(filter = 'all') {
+        const highScoreList = document.getElementById('highscore-list');
+        const statsContainer = document.getElementById('highscore-stats');
+        
+        if (!highScoreList || !statsContainer) return;
+        
+        let scores;
+        if (filter === 'all') {
+            scores = this.highScoreManager.getHighScores();
+        } else {
+            scores = this.highScoreManager.getHighScoresByDifficulty(filter);
+        }
+        
+        // Display scores
+        if (scores.length === 0) {
+            highScoreList.innerHTML = '<div class="no-scores">No high scores yet! Start playing to set your first record!</div>';
+        } else {
+            let scoresHTML = '';
+            scores.forEach((score, index) => {
+                scoresHTML += `
+                    <div class="highscore-entry ${index < 3 ? 'top-three' : ''}">
+                        <div class="rank">#${index + 1}</div>
+                        <div class="score-details">
+                            <div class="player-name">${score.playerName}</div>
+                            <div class="score-info">
+                                <span class="score">${this.highScoreManager.formatScore(score.score)}</span>
+                                <span class="difficulty">${this.highScoreManager.getDifficultyEmoji(score.difficulty)} ${score.difficulty}</span>
+                                <span class="level">Level ${score.level}</span>
+                            </div>
+                            <div class="molecules-formed">
+                                ${score.formedMolecules?.length || 0} molecules formed
+                            </div>
+                            <div class="date">${this.highScoreManager.formatDate(score.date)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            highScoreList.innerHTML = scoresHTML;
+        }
+        
+        // Display stats
+        const stats = this.highScoreManager.getStats();
+        statsContainer.innerHTML = `
+            <h3>📊 Statistics</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">${stats.totalGames}</div>
+                    <div class="stat-label">Games Played</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${this.highScoreManager.formatScore(stats.bestScore)}</div>
+                    <div class="stat-label">Best Score</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${this.highScoreManager.formatScore(stats.averageScore)}</div>
+                    <div class="stat-label">Average Score</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.totalMolecules}</div>
+                    <div class="stat-label">Total Molecules</div>
+                </div>
+            </div>
+        `;
     }
     
     // Update game over display with results
