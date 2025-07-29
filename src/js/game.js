@@ -12,6 +12,7 @@ class Game {
         
         this.player = null;
         this.obstacles = [];
+        this.platforms = [];
         this.elements = [];
         this.collectedElements = [];
         this.formedMolecules = []; // Track all molecules formed during the game
@@ -21,6 +22,7 @@ class Game {
         this.spawnRate = 1800; // More frequent spawning
         this.lastSpawnTime = 0;
         this.lastElementSpawnTime = 0;
+        this.lastPlatformSpawnTime = 0;
         
         this.running = false;
         this.paused = false;
@@ -187,6 +189,7 @@ class Game {
     
     reset() {
         this.obstacles = [];
+        this.platforms = [];
         this.elements = [];
         this.collectedElements = [];
         this.formedMolecules = []; // Reset formed molecules
@@ -281,6 +284,14 @@ class Game {
             this.lastElementSpawnTime = this.currentTime;
         }
         
+        // Spawn platforms more frequently for better gameplay
+        if (this.currentTime - this.lastPlatformSpawnTime > this.spawnRate * 1.5) { // More frequent spawning
+            if (Math.random() < 0.8) { // 80% chance when they do spawn
+                this.spawnPlatform();
+            }
+            this.lastPlatformSpawnTime = this.currentTime;
+        }
+        
         // Update obstacles
         for (let i = this.obstacles.length - 1; i >= 0; i--) {
             const obstacle = this.obstacles[i];
@@ -315,6 +326,23 @@ class Game {
             if (Physics.checkCollision(this.player.getBounds(), element.getBounds())) {
                 this.collectElement(element);
                 this.elements.splice(i, 1);
+            }
+        }
+        
+        // Update platforms
+        for (let i = this.platforms.length - 1; i >= 0; i--) {
+            const platform = this.platforms[i];
+            platform.update(deltaTime, this.speed);
+            
+            // Remove off-screen platforms
+            if (platform.isOffScreen()) {
+                this.platforms.splice(i, 1);
+                continue;
+            }
+            
+            // Check if player can land on platform
+            if (platform.canLandOn(this.player)) {
+                platform.handleLanding(this.player);
             }
         }
         
@@ -389,6 +417,18 @@ class Game {
                 // Fallback element rendering
                 this.ctx.fillStyle = '#f39c12';
                 this.ctx.fillRect(element.x, element.y, element.width, element.height);
+            }
+        });
+        
+        // Draw platforms
+        this.platforms.forEach(platform => {
+            try {
+                platform.render(this.ctx);
+            } catch (e) {
+                console.error('Platform render error:', e);
+                // Fallback platform rendering
+                this.ctx.fillStyle = '#34495e';
+                this.ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
             }
         });
         
@@ -509,6 +549,29 @@ class Game {
         );
         
         this.elements.push(element);
+    }
+    
+    spawnPlatform() {
+        const platformTypes = ['basic', 'glass', 'metal', 'crystal', 'energy'];
+        const randomType = platformTypes[Math.floor(Math.random() * platformTypes.length)];
+        
+        // Longer platform dimensions for better gameplay
+        const width = 120 + Math.random() * 180; // 120-300 pixels wide (increased from 80-200)
+        const height = 15 + Math.random() * 10; // 15-25 pixels tall
+        
+        // Random height above ground (but accessible by jumping)
+        const groundLevel = this.height - 20;
+        const platformHeight = 60 + Math.random() * 120; // 60-180 pixels above ground
+        
+        const platform = new Platform(
+            this.width,
+            groundLevel - platformHeight,
+            width,
+            height,
+            randomType
+        );
+        
+        this.platforms.push(platform);
     }
     
     collectElement(element) {
