@@ -31,6 +31,9 @@ class Game {
         // Game state
         this.gameStartTime = 0;
         this.currentTime = 0;
+        
+        // Compound notifications
+        this.compoundNotifications = [];
     }
     
     init() {
@@ -164,6 +167,23 @@ class Game {
         console.log('Game reset!');
     }
     
+    // Add a compound notification when a molecule is formed
+    addCompoundNotification(molecule) {
+        this.compoundNotifications.push({
+            name: molecule.name,
+            formula: molecule.formula,
+            points: molecule.points,
+            timestamp: performance.now(),
+            y: 150, // Starting Y position
+            opacity: 1.0
+        });
+        
+        // Keep only the last 3 notifications
+        if (this.compoundNotifications.length > 3) {
+            this.compoundNotifications.shift();
+        }
+    }
+
     gameLoop(currentTime) {
         if (!this.running) return;
         if (this.paused) return;
@@ -326,6 +346,9 @@ class Game {
             }
         });
         
+        // Draw compound notifications
+        this.renderCompoundNotifications();
+        
         // Simplified debug information (top-right corner)
         this.ctx.fillStyle = '#ffffff';
         this.ctx.font = '14px Arial';
@@ -339,6 +362,69 @@ class Game {
         this.ctx.font = '12px Arial';
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
         this.ctx.fillText('SPACE to jump (double jump available!)', 10, this.height - 30);
+    }
+    
+    // Render compound notifications when molecules are formed
+    renderCompoundNotifications() {
+        const currentTime = performance.now();
+        
+        // Update and render notifications
+        for (let i = this.compoundNotifications.length - 1; i >= 0; i--) {
+            const notification = this.compoundNotifications[i];
+            const age = currentTime - notification.timestamp;
+            const maxAge = 3000; // 3 seconds
+            
+            // Remove old notifications
+            if (age > maxAge) {
+                this.compoundNotifications.splice(i, 1);
+                continue;
+            }
+            
+            // Calculate animation properties
+            const progress = age / maxAge;
+            notification.opacity = Math.max(0, 1 - progress * progress); // Fade out with easing
+            notification.y = 150 - (progress * 50); // Move up slowly
+            
+            // Draw notification background
+            this.ctx.save();
+            this.ctx.globalAlpha = notification.opacity * 0.8;
+            this.ctx.fillStyle = '#2c3e50';
+            this.ctx.strokeStyle = '#4ecca3';
+            this.ctx.lineWidth = 2;
+            
+            const x = this.width / 2 - 120;
+            const y = notification.y + (i * 60); // Stack notifications
+            const width = 240;
+            const height = 50;
+            
+            // Draw rounded rectangle background
+            this.ctx.beginPath();
+            if (this.ctx.roundRect) {
+                this.ctx.roundRect(x, y, width, height, 8);
+            } else {
+                // Fallback for older browsers
+                this.ctx.rect(x, y, width, height);
+            }
+            this.ctx.fill();
+            this.ctx.stroke();
+            
+            // Draw text
+            this.ctx.globalAlpha = notification.opacity;
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = 'bold 16px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('Compound Formed!', x + width/2, y + 18);
+            
+            this.ctx.fillStyle = '#4ecca3';
+            this.ctx.font = 'bold 14px Arial';
+            this.ctx.fillText(`${notification.name} (${notification.formula})`, x + width/2, y + 35);
+            
+            this.ctx.fillStyle = '#f39c12';
+            this.ctx.font = '12px Arial';
+            this.ctx.fillText(`+${notification.points} points`, x + width/2, y + 48);
+            
+            this.ctx.restore();
+        }
     }
     
     spawnObstacle() {
@@ -387,13 +473,23 @@ class Game {
         this.hud.addElement(element.symbol);
         
         // Check for completed molecules
-        const possibleMolecules = ChemistryData.checkForMolecules(this.collectedElements);
-        if (possibleMolecules.length > 0) {
+        const moleculeResult = ChemistryData.checkForMolecules(this.collectedElements);
+        if (moleculeResult.molecules.length > 0) {
             // Award bonus points for completing molecules
-            const bestMolecule = possibleMolecules[0];
-            this.score += bestMolecule.points;
+            const formedMolecule = moleculeResult.molecules[0];
+            this.score += formedMolecule.points;
             
-            console.log(`Molecule formed: ${bestMolecule.formula} - ${bestMolecule.name}`);
+            // Update collected elements to remove used atoms
+            this.collectedElements = moleculeResult.remainingElements;
+            
+            // Add compound notification
+            this.addCompoundNotification(formedMolecule);
+            
+            // Update HUD with new element list
+            this.hud.updateCollectedElements(this.collectedElements);
+            
+            console.log(`Molecule formed: ${formedMolecule.formula} - ${formedMolecule.name} (+${formedMolecule.points} points)`);
+            console.log(`Elements used: ${moleculeResult.elementsUsed}, Remaining: ${this.collectedElements.length}`);
         }
     }
     

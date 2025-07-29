@@ -81,6 +81,13 @@ class HUD {
         this.updateMoleculeDisplay();
     }
     
+    // Update collected elements list (used when compounds are formed and elements are consumed)
+    updateCollectedElements(newElementsList) {
+        this.collectedElements = [...newElementsList];
+        this.updateElementsDisplay();
+        this.updateMoleculeDisplay();
+    }
+    
     // Update the collected elements display
     updateElementsDisplay() {
         const elementsContainer = document.getElementById('collected-elements');
