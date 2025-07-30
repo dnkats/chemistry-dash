@@ -98,32 +98,42 @@ class Game {
     init() {
         console.log('Game: Initializing...');
         
-        // Set canvas size
+        // Initialize level generator
+        this.levelGenerator = new LevelGenerator(this.width, this.height);
+        this.lastComplexStructureTime = 0;
+        this.complexStructureInterval = 8000; // Spawn complex structures every 8 seconds
+        
+        // Initialize canvas
         this.canvas.width = this.width;
         this.canvas.height = this.height;
         
-        // Create player with initial level
-        this.player = new Player(80, this.height - 70, this.level); // Pass level to player
-        console.log('Game: Player created');
+        // Create player
+        this.player = new Player(100, this.height - 120, 30, 40);
         
-        // Initialize HUD
-        this.hud = new HUD();
-        // Update HUD to show initial molecule
-        this.hud.updatePlayerMolecule(this.player.moleculeData);
-        console.log('Game: HUD created');
-        
-        // Initialize Menu
+        // Initialize UI components
+        this.hud = new HUD(this);
         this.menu = new Menu();
-        this.menu.setGameInstance(this);
-        console.log('Game: Menu created');
+        this.menu.gameInstance = this; // Link menu to game instance
+        this.menu.initializeMenus(); // Initialize menu system
         
-        // Set up controls
+        // Setup controls
         this.setupControls();
         
-        // Load chemistry data
-        this.elementData = ChemistryData.elements;
+        // Set initial game state
+        this.gameStartTime = Date.now();
+        this.currentTime = 0;
         
-        console.log('Game initialized successfully!');
+        console.log('Game: Initialized successfully');
+        console.log('Canvas dimensions:', this.width, 'x', this.height);
+        console.log('Player position:', this.player.x, this.player.y);
+        
+        // Load chemistry data
+        if (typeof ChemistryData !== 'undefined') {
+            console.log('Chemistry data loaded successfully');
+        }
+        
+        // Show the main menu instead of auto-starting
+        this.menu.showMainMenu();
     }
     
     setupControls() {
@@ -158,7 +168,7 @@ class Game {
             }
         });
     }
-    
+
     start() {
         console.log('Game: Starting...');
         this.running = true;
@@ -396,14 +406,20 @@ class Game {
         // Update player
         this.player.update(deltaTime);
         
+        // Check if player is off-screen and respawn if needed
+        this.checkPlayerBounds();
+        
+        // Reset grounded state at the start of each frame (will be set by collision detection)
+        this.player.grounded = false;
+        
         // Check platform collisions first (they have priority over ground)
         let onPlatform = false;
         for (let i = this.platforms.length - 1; i >= 0; i--) {
             const platform = this.platforms[i];
             platform.update(deltaTime, this.gameSpeed || this.speed);
             
-            // Remove off-screen platforms
-            if (platform.isOffScreen()) {
+            // Remove off-screen platforms or disappeared platforms
+            if (platform.isOffScreen() || (platform.shouldBeRemoved && platform.shouldBeRemoved())) {
                 this.platforms.splice(i, 1);
                 continue;
             }
@@ -445,7 +461,14 @@ class Game {
         
         // Spawn obstacles
         if (this.currentTime - this.lastSpawnTime > this.spawnRate) {
-            this.spawnObstacle();
+            // Check if we should spawn a complex structure
+            if (this.currentTime - this.lastComplexStructureTime > this.complexStructureInterval &&
+                this.levelGenerator.shouldSpawnComplexStructure(this.difficulty)) {
+                this.spawnComplexStructure();
+                this.lastComplexStructureTime = this.currentTime;
+            } else {
+                this.spawnObstacle();
+            }
             this.lastSpawnTime = this.currentTime;
         }
         
@@ -477,10 +500,67 @@ class Game {
                 continue;
             }
             
-            // Check collision with player (only if not invulnerable from damage or bonus)
-            if (!this.invulnerable && !this.bonusInvulnerable && Physics.checkCollision(this.player.getBounds(), obstacle.getBounds())) {
-                this.takeDamage();
-                continue; // Don't check more obstacles in the same frame
+            // Check collision with player
+            if (Physics.checkCollision(this.player.getBounds(), obstacle.getBounds())) {
+                // Handle solid obstacles (walls, barriers, horizontal bars)
+                if (obstacle.solid || obstacle.impenetrable) {
+                    // Prevent player from passing through solid obstacles
+                    const playerBounds = this.player.getBounds();
+                    const obstacleBounds = obstacle.getBounds();
+                    
+                    // Determine collision side and push player back
+                    const overlapLeft = (playerBounds.x + playerBounds.width) - obstacleBounds.x;
+                    const overlapRight = (obstacleBounds.x + obstacleBounds.width) - playerBounds.x;
+                    const overlapTop = (playerBounds.y + playerBounds.height) - obstacleBounds.y;
+                    const overlapBottom = (obstacleBounds.y + obstacleBounds.height) - playerBounds.y;
+                    
+                    // Find the smallest overlap to determine collision direction
+                    const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+                    
+                    if (minOverlap === overlapLeft) {
+                        // Hit from the left - stop horizontal movement
+                        this.player.x = obstacleBounds.x - playerBounds.width;
+                        this.player.velocityX = Math.min(0, this.player.velocityX);
+                    } else if (minOverlap === overlapRight) {
+                        // Hit from the right - stop horizontal movement  
+                        this.player.x = obstacleBounds.x + obstacleBounds.width;
+                        this.player.velocityX = Math.max(0, this.player.velocityX);
+                    } else if (minOverlap === overlapTop) {
+                        // Hit from above (landing on top)
+                        if (obstacle.type === 'horizontal_bar') {
+                            // Can land on horizontal bars - only if falling down
+                            if (this.player.velocityY > 0) {
+                                this.player.y = obstacleBounds.y - playerBounds.height;
+                                this.player.velocityY = 0;
+                                this.player.grounded = true;
+                                this.player.jumpsRemaining = this.player.maxJumps;
+                            }
+                        } else {
+                            // Hit ceiling - stop upward movement only if moving up
+                            if (this.player.velocityY < 0) {
+                                this.player.y = obstacleBounds.y + obstacleBounds.height;
+                                this.player.velocityY = 0;
+                            }
+                        }
+                    } else if (minOverlap === overlapBottom) {
+                        // Hit from below - stop upward movement only if moving up
+                        if (this.player.velocityY < 0) {
+                            this.player.y = obstacleBounds.y + obstacleBounds.height;
+                            this.player.velocityY = 0;
+                        }
+                    }
+                    
+                    // Don't take damage from non-harmful solid obstacles
+                    if (obstacle.dangerLevel === 'none' || obstacle.type === 'horizontal_bar') {
+                        continue;
+                    }
+                }
+                
+                // Check collision with player (only if not invulnerable from damage or bonus)
+                if (!this.invulnerable && !this.bonusInvulnerable) {
+                    this.takeDamage();
+                    continue; // Don't check more obstacles in the same frame
+                }
             }
         }
         
@@ -696,21 +776,8 @@ class Game {
     }
     
     spawnObstacle() {
-        const obstacleTypes = ['beaker', 'acid', 'flask'];
-        const randomType = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-        
-        // Make obstacles more reasonable for jumping
-        const height = 25 + Math.random() * 35; // Reduced from 40-100 to 25-60
-        const width = 25 + Math.random() * 20;  // Reduced from 30-60 to 25-45
-        
-        const obstacle = new Obstacle(
-            this.width,
-            this.height - 20 - height, // Ground level minus obstacle height
-            width,
-            height,
-            randomType
-        );
-        
+        // Use level generator for more varied obstacles
+        const obstacle = this.levelGenerator.generateObstacle(this.width, this.difficulty);
         this.obstacles.push(obstacle);
     }
     
@@ -734,26 +801,25 @@ class Game {
     }
     
     spawnPlatform() {
-        const platformTypes = ['basic', 'glass', 'metal', 'crystal', 'energy'];
-        const randomType = platformTypes[Math.floor(Math.random() * platformTypes.length)];
-        
-        // Longer platform dimensions for better gameplay
-        const width = 120 + Math.random() * 180; // 120-300 pixels wide (increased from 80-200)
-        const height = 15 + Math.random() * 10; // 15-25 pixels tall
-        
-        // Random height above ground (but accessible by jumping)
-        const groundLevel = this.height - 20;
-        const platformHeight = 60 + Math.random() * 120; // 60-180 pixels above ground
-        
-        const platform = new Platform(
-            this.width,
-            groundLevel - platformHeight,
-            width,
-            height,
-            randomType
-        );
-        
+        // Use level generator for more varied platforms
+        const platform = this.levelGenerator.generatePlatform(this.width, this.difficulty);
         this.platforms.push(platform);
+    }
+    
+    spawnComplexStructure() {
+        // Generate a complex structure using the level generator
+        const structures = this.levelGenerator.generateComplexStructure(this.width, this.difficulty);
+        
+        // Add all generated structures to their respective arrays
+        for (const structure of structures) {
+            if (structure.type === 'obstacle') {
+                this.obstacles.push(structure.object);
+            } else if (structure.type === 'platform') {
+                this.platforms.push(structure.object);
+            }
+        }
+        
+        console.log(`Spawned complex structure with ${structures.length} components`);
     }
     
     collectElement(element) {
@@ -813,6 +879,20 @@ class Game {
         // Check if game over
         if (this.lives <= 0) {
             this.gameOver();
+        }
+    }
+
+    // Check if player is out of bounds and respawn if necessary
+    checkPlayerBounds() {
+        const buffer = 50; // Buffer zone beyond screen edges
+        
+        // Check if player has fallen off the screen or moved too far left/right
+        if (this.player.x < -buffer || 
+            this.player.x > this.width + buffer || 
+            this.player.y > this.height + buffer) {
+            
+            console.log(`Player went off-screen at position: ${this.player.x}, ${this.player.y}`);
+            this.takeDamage(); // Use existing damage system to respawn
         }
     }
 

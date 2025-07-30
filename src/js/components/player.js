@@ -320,8 +320,8 @@ class Player {
         Physics.applyGravity(this, deltaTime);
         Physics.updatePosition(this, deltaTime);
         
-        // Reset grounded state (will be set by collision detection)
-        this.grounded = false;
+        // Note: grounded state will be set by collision detection in game.js
+        // We don't reset it here anymore since that was causing the jump bug
     }
     
     jump() {
