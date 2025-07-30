@@ -70,6 +70,7 @@ h1 {
     background: rgba(26, 26, 46, 0.95);
     width: 90%;
     max-width: 500px;
+    max-height: 80vh; /* Limit height to 80% of viewport */
     padding: 30px;
     border-radius: 15px;
     text-align: center;
@@ -78,6 +79,55 @@ h1 {
     display: none;
     border: 3px solid #4ecca3;
     box-shadow: 0 0 30px rgba(78, 204, 163, 0.5);
+    overflow-y: auto; /* Enable vertical scrolling */
+}
+
+/* Custom scrollbar styling */
+.menu-screen::-webkit-scrollbar {
+    width: 8px;
+}
+
+.menu-screen::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.menu-screen::-webkit-scrollbar-thumb {
+    background: #4ecca3;
+    border-radius: 4px;
+}
+
+.menu-screen::-webkit-scrollbar-thumb:hover {
+    background: #3db58a;
+}
+
+/* Scrollable molecule summary */
+.molecule-summary-scrollable {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #4ecca3;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.molecule-summary-scrollable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.molecule-summary-scrollable::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.molecule-summary-scrollable::-webkit-scrollbar-thumb {
+    background: #4ecca3;
+    border-radius: 3px;
+}
+
+.molecule-summary-scrollable::-webkit-scrollbar-thumb:hover {
+    background: #3db58a;
 }
 
 .menu-screen.active {

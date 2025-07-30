@@ -447,6 +447,13 @@ class Menu {
             // Show formed molecules (compounds)
             if (formedMolecules.length > 0) {
                 summaryHTML += `<div style="margin-bottom: 15px;"><strong>Formed Molecules (${formedMolecules.length}):</strong></div>`;
+                
+                // Use scrollable container if there are many molecules (more than 5)
+                const useScrollableContainer = formedMolecules.length > 5;
+                if (useScrollableContainer) {
+                    summaryHTML += '<div class="molecule-summary-scrollable">';
+                }
+                
                 formedMolecules.forEach(molecule => {
                     summaryHTML += `
                         <div style="background: rgba(78, 204, 163, 0.1); border: 1px solid #4ecca3; border-radius: 5px; padding: 8px; margin: 5px 0;">
@@ -456,6 +463,10 @@ class Menu {
                         </div>
                     `;
                 });
+                
+                if (useScrollableContainer) {
+                    summaryHTML += '</div>';
+                }
             }
             
             // Show remaining individual atoms
