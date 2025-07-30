@@ -52,7 +52,7 @@ class Obstacle {
             case 'wall':
                 this.color = '#7f8c8d';
                 this.accentColor = '#95a5a6';
-                this.dangerLevel = 'extreme';
+                this.dangerLevel = 'none';
                 this.impenetrable = true;
                 this.solid = true;
                 break;

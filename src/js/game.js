@@ -550,8 +550,8 @@ class Game {
                         }
                     }
                     
-                    // Don't take damage from non-harmful solid obstacles
-                    if (obstacle.dangerLevel === 'none' || obstacle.type === 'horizontal_bar') {
+                    // Don't take damage from non-harmful solid obstacles (walls, horizontal bars)
+                    if (obstacle.dangerLevel === 'none' || obstacle.type === 'horizontal_bar' || obstacle.type === 'wall') {
                         continue;
                     }
                 }
