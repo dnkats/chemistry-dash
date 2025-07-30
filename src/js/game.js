@@ -19,10 +19,27 @@ class Game {
         
         this.score = 0;
         this.speed = 4; // Slightly faster base speed
+        this.gameSpeed = 4; // Actual speed used for game objects (may be modified by bonuses)
         this.spawnRate = 1800; // More frequent spawning
         this.lastSpawnTime = 0;
         this.lastElementSpawnTime = 0;
         this.lastPlatformSpawnTime = 0;
+        
+        // Lives system
+        this.lives = 3; // Player starts with 3 lives
+        this.maxLives = 3;
+        this.invulnerable = false; // Invulnerability after taking damage
+        this.invulnerabilityDuration = 2000; // 2 seconds of invulnerability
+        this.lastDamageTime = 0;
+        
+        // Molecule bonus system
+        this.bonusInvulnerable = false; // Extended invulnerability from molecule bonus
+        this.bonusInvulnerabilityDuration = 10000; // 10 seconds
+        this.lastBonusInvulnerabilityTime = 0;
+        this.speedReduction = false; // Speed reduction bonus
+        this.speedReductionDuration = 15000; // 15 seconds
+        this.lastSpeedReductionTime = 0;
+        this.originalSpeed = 4; // Store original speed for restoration
         
         this.running = false;
         this.paused = false;
@@ -207,9 +224,21 @@ class Game {
         this.level = 1;
         this.paused = false; // Reset pause state
         
+        // Reset lives system
+        this.lives = this.maxLives;
+        this.invulnerable = false;
+        this.lastDamageTime = 0;
+        
+        // Reset bonus systems
+        this.bonusInvulnerable = false;
+        this.lastBonusInvulnerabilityTime = 0;
+        this.speedReduction = false;
+        this.lastSpeedReductionTime = 0;
+        
         // Reset speed and spawn rate based on current difficulty
         const settings = this.getDifficultySettings(this.difficulty);
         this.speed = settings.baseSpeed;
+        this.gameSpeed = settings.baseSpeed;
         this.spawnRate = settings.spawnRate;
         
         this.player.reset(80, this.height - 70);
@@ -221,6 +250,7 @@ class Game {
             // Update HUD to show initial molecule and difficulty
             this.hud.updatePlayerMolecule(this.player.moleculeData);
             this.hud.updateDifficulty(this.difficulty);
+            this.hud.updateLives(this.lives);
         }
         
         console.log('Game reset!');
@@ -235,6 +265,71 @@ class Game {
             timestamp: performance.now(),
             y: 150, // Starting Y position
             opacity: 1.0
+        });
+        
+        // Keep only the last 3 notifications
+        if (this.compoundNotifications.length > 3) {
+            this.compoundNotifications.shift();
+        }
+    }
+
+    // Grant random bonus when molecule is formed
+    grantMoleculeBonus(molecule) {
+        const bonusTypes = ['life', 'invulnerability', 'speed'];
+        const randomBonus = bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
+        
+        let bonusMessage = '';
+        
+        switch (randomBonus) {
+            case 'life':
+                if (this.lives < this.maxLives) {
+                    this.lives++;
+                    this.hud.updateLives(this.lives);
+                    bonusMessage = '+1 Life!';
+                } else {
+                    // If already at max lives, give points instead
+                    this.score += 100;
+                    bonusMessage = '+100 Bonus Points!';
+                }
+                break;
+                
+            case 'invulnerability':
+                this.bonusInvulnerable = true;
+                this.lastBonusInvulnerabilityTime = this.currentTime;
+                bonusMessage = '10s Invulnerability!';
+                break;
+                
+            case 'speed':
+                this.speedReduction = true;
+                this.lastSpeedReductionTime = this.currentTime;
+                this.originalSpeed = this.speed; // Store current speed before reduction
+                bonusMessage = '15s Speed Reduction!';
+                break;
+        }
+        
+        // Add bonus notification
+        this.addBonusNotification(bonusMessage, randomBonus);
+        
+        console.log(`Molecule bonus granted: ${bonusMessage}`);
+    }
+
+    // Add bonus notification
+    addBonusNotification(message, type) {
+        const colors = {
+            life: '#e74c3c',
+            invulnerability: '#3498db', 
+            speed: '#f39c12'
+        };
+        
+        this.compoundNotifications.push({
+            name: 'BONUS!',
+            formula: message,
+            points: '',
+            timestamp: performance.now(),
+            y: 150,
+            opacity: 1.0,
+            isBonus: true,
+            bonusColor: colors[type] || '#4ecca3'
         });
         
         // Keep only the last 3 notifications
@@ -273,6 +368,31 @@ class Game {
     }
     
     update(deltaTime) {
+        // Update invulnerability
+        if (this.invulnerable) {
+            const timeSinceLastDamage = this.currentTime - this.lastDamageTime;
+            if (timeSinceLastDamage >= this.invulnerabilityDuration) {
+                this.invulnerable = false;
+            }
+        }
+        
+        // Update bonus invulnerability
+        if (this.bonusInvulnerable) {
+            const timeSinceBonusInvulnerability = this.currentTime - this.lastBonusInvulnerabilityTime;
+            if (timeSinceBonusInvulnerability >= this.bonusInvulnerabilityDuration) {
+                this.bonusInvulnerable = false;
+            }
+        }
+        
+        // Update speed reduction bonus
+        if (this.speedReduction) {
+            const timeSinceSpeedReduction = this.currentTime - this.lastSpeedReductionTime;
+            if (timeSinceSpeedReduction >= this.speedReductionDuration) {
+                this.speedReduction = false;
+                // Don't restore original speed here as it will be overridden by difficulty progression
+            }
+        }
+        
         // Update player
         this.player.update(deltaTime);
         
@@ -280,7 +400,7 @@ class Game {
         let onPlatform = false;
         for (let i = this.platforms.length - 1; i >= 0; i--) {
             const platform = this.platforms[i];
-            platform.update(deltaTime, this.speed);
+            platform.update(deltaTime, this.gameSpeed || this.speed);
             
             // Remove off-screen platforms
             if (platform.isOffScreen()) {
@@ -348,7 +468,7 @@ class Game {
         // Update obstacles
         for (let i = this.obstacles.length - 1; i >= 0; i--) {
             const obstacle = this.obstacles[i];
-            obstacle.update(deltaTime, this.speed);
+            obstacle.update(deltaTime, this.gameSpeed || this.speed);
             
             // Remove off-screen obstacles
             if (obstacle.isOffScreen()) {
@@ -357,17 +477,17 @@ class Game {
                 continue;
             }
             
-            // Check collision with player
-            if (Physics.checkCollision(this.player.getBounds(), obstacle.getBounds())) {
-                this.gameOver();
-                return;
+            // Check collision with player (only if not invulnerable from damage or bonus)
+            if (!this.invulnerable && !this.bonusInvulnerable && Physics.checkCollision(this.player.getBounds(), obstacle.getBounds())) {
+                this.takeDamage();
+                continue; // Don't check more obstacles in the same frame
             }
         }
         
         // Update elements
         for (let i = this.elements.length - 1; i >= 0; i--) {
             const element = this.elements[i];
-            element.update(deltaTime, this.speed);
+            element.update(deltaTime, this.gameSpeed || this.speed);
             
             // Remove off-screen elements
             if (element.isOffScreen()) {
@@ -382,8 +502,22 @@ class Game {
             }
         }
         
-        // Increase difficulty over time
-        this.speed += 0.002;
+        // Increase difficulty over time (but apply speed reduction if active)
+        if (!this.speedReduction) {
+            // Normal speed progression
+            this.speed += 0.002;
+        }
+        
+        // Apply speed reduction if active (after normal progression)
+        let currentGameSpeed = this.speed;
+        if (this.speedReduction) {
+            // Reduce speed by 20% during bonus
+            currentGameSpeed = this.speed * 0.8;
+        }
+        
+        // Use the modified speed for all game objects
+        this.gameSpeed = currentGameSpeed;
+        
         this.spawnRate = Math.max(800, this.spawnRate - 0.5);
         
         // Level progression (faster progression to see molecules change)
@@ -423,7 +557,7 @@ class Game {
         // Draw player (with fallback if player.render fails)
         if (this.player) {
             try {
-                this.player.render(this.ctx);
+                this.player.render(this.ctx, this.invulnerable || this.bonusInvulnerable);
             } catch (e) {
                 console.error('Player render error:', e);
                 // Fallback player rendering
@@ -535,15 +669,27 @@ class Game {
             this.ctx.fillStyle = '#ffffff';
             this.ctx.font = 'bold 16px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText('Compound Formed!', x + width/2, y + 18);
             
-            this.ctx.fillStyle = '#4ecca3';
-            this.ctx.font = 'bold 14px Arial';
-            this.ctx.fillText(`${notification.name} (${notification.formula})`, x + width/2, y + 35);
-            
-            this.ctx.fillStyle = '#f39c12';
-            this.ctx.font = '12px Arial';
-            this.ctx.fillText(`+${notification.points} points`, x + width/2, y + 48);
+            if (notification.isBonus) {
+                // Special styling for bonus notifications
+                this.ctx.fillStyle = notification.bonusColor;
+                this.ctx.fillText(notification.name, x + width/2, y + 18);
+                
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = 'bold 12px Arial';
+                this.ctx.fillText(notification.formula, x + width/2, y + 35);
+            } else {
+                // Regular molecule notifications
+                this.ctx.fillText('Compound Formed!', x + width/2, y + 18);
+                
+                this.ctx.fillStyle = '#4ecca3';
+                this.ctx.font = 'bold 14px Arial';
+                this.ctx.fillText(`${notification.name} (${notification.formula})`, x + width/2, y + 35);
+                
+                this.ctx.fillStyle = '#f39c12';
+                this.ctx.font = '12px Arial';
+                this.ctx.fillText(`+${notification.points} points`, x + width/2, y + 48);
+            }
             
             this.ctx.restore();
         }
@@ -633,6 +779,9 @@ class Game {
             // Add compound notification
             this.addCompoundNotification(formedMolecule);
             
+            // Grant random bonus for forming molecule
+            this.grantMoleculeBonus(formedMolecule);
+            
             // Update HUD with new element list
             this.hud.updateCollectedElements(this.collectedElements);
             
@@ -641,12 +790,38 @@ class Game {
             console.log(`Total formed molecules: ${this.formedMolecules.length}`);
         }
     }
-    
+
+    // Handle taking damage
+    takeDamage() {
+        if (this.invulnerable) return; // Already invulnerable
+        
+        this.lives--;
+        this.invulnerable = true;
+        this.lastDamageTime = this.currentTime;
+        
+        console.log(`Player took damage! Lives remaining: ${this.lives}`);
+        
+        // Update HUD
+        if (this.hud) {
+            this.hud.updateLives(this.lives);
+        }
+        
+        // Reset player position to safe spot
+        this.player.reset(80, this.height - 70);
+        this.player.updateMolecule(this.level); // Maintain current molecule
+        
+        // Check if game over
+        if (this.lives <= 0) {
+            this.gameOver();
+        }
+    }
+
     gameOver() {
         this.running = false;
         
         console.log('Game Over!');
         console.log(`Final Score: ${this.score}`);
+        console.log(`Lives Remaining: ${this.lives}`);
         console.log(`Elements Collected: ${this.collectedElements.length}`);
         console.log(`Formed Molecules: ${this.formedMolecules.length}`, this.formedMolecules);
         
@@ -656,7 +831,8 @@ class Game {
             this.level,
             this.collectedElements,
             this.hud.currentMolecule,
-            this.formedMolecules
+            this.formedMolecules,
+            this.lives
         );
     }
 }

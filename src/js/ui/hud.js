@@ -19,6 +19,10 @@ class HUD {
                 <span id="score-value">0</span>
             </div>
             <div class="hud-item">
+                <span class="hud-label">Lives:</span>
+                <span id="lives-value">3</span>
+            </div>
+            <div class="hud-item">
                 <span class="hud-label">Level:</span>
                 <span id="level-value">1</span>
             </div>
@@ -54,6 +58,33 @@ class HUD {
     updateLevel(newLevel) {
         this.level = newLevel;
         document.getElementById('level-value').textContent = this.level;
+    }
+
+    // Update lives
+    updateLives(newLives) {
+        this.lives = newLives;
+        const livesElement = document.getElementById('lives-value');
+        
+        // Create heart symbols for lives
+        let heartsDisplay = '';
+        for (let i = 0; i < this.lives; i++) {
+            heartsDisplay += '❤️';
+        }
+        // Add empty hearts for lost lives
+        for (let i = this.lives; i < 3; i++) {
+            heartsDisplay += '🖤';
+        }
+        
+        livesElement.innerHTML = heartsDisplay;
+        
+        // Change color based on lives remaining
+        if (this.lives <= 1) {
+            livesElement.style.color = '#e74c3c'; // Red for critical
+        } else if (this.lives <= 2) {
+            livesElement.style.color = '#f39c12'; // Orange for warning
+        } else {
+            livesElement.style.color = '#4ecca3'; // Green for safe
+        }
     }
     
     // Update player molecule display
@@ -145,6 +176,7 @@ class HUD {
         
         this.updateScore(0);
         this.updateLevel(1);
+        this.updateLives(3);
         this.updateSpeed(0);
         this.updateElementsDisplay();
         this.updateMoleculeDisplay();

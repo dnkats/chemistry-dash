@@ -295,14 +295,15 @@ class Menu {
     }
     
     // Show game over screen with results
-    showGameOver(score, level, collectedElements, finalMolecule, formedMolecules = []) {
+    showGameOver(score, level, collectedElements, finalMolecule, formedMolecules = [], livesRemaining = 0) {
         // Check if this is a high score
         const scoreData = {
             score: score,
             level: level,
             difficulty: this.selectedDifficulty,
             formedMolecules: formedMolecules,
-            elementsCollected: collectedElements ? collectedElements.length : 0
+            elementsCollected: collectedElements ? collectedElements.length : 0,
+            livesRemaining: livesRemaining
         };
 
         const isHighScore = this.highScoreManager.isHighScore(score);

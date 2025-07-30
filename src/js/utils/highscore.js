@@ -44,7 +44,8 @@ class HighScoreManager {
             date: new Date().toISOString(),
             formedMolecules: scoreData.formedMolecules || [],
             elementsCollected: scoreData.elementsCollected || 0,
-            playerName: scoreData.playerName || 'Anonymous'
+            playerName: scoreData.playerName || 'Anonymous',
+            livesRemaining: scoreData.livesRemaining || 0
         };
 
         // Check if this is a high score

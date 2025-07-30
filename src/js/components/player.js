@@ -340,8 +340,15 @@ class Player {
         }
     }
     
-    render(ctx) {
+    render(ctx, invulnerable = false) {
         ctx.save();
+        
+        // Handle invulnerability flashing effect
+        if (invulnerable) {
+            const flashRate = 0.1; // Faster flashing
+            const flashIntensity = Math.sin(Date.now() * flashRate) * 0.5 + 0.5;
+            ctx.globalAlpha = 0.3 + flashIntensity * 0.7; // Flash between 30% and 100% opacity
+        }
         
         // Move to center for rotation
         const centerX = this.x + this.width/2;
@@ -349,10 +356,15 @@ class Player {
         ctx.translate(centerX, centerY);
         ctx.rotate(this.rotation);
         
-        // Draw glow effect (brighter if double jump available)
+        // Draw glow effect (brighter if double jump available, different color if invulnerable)
         const glowIntensity = this.jumpsRemaining > 1 ? 20 : 15;
-        ctx.shadowColor = this.jumpsRemaining > 1 ? 'rgba(78, 204, 163, 0.8)' : this.glowColor;
-        ctx.shadowBlur = glowIntensity;
+        if (invulnerable) {
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.8)'; // White glow when invulnerable
+            ctx.shadowBlur = glowIntensity + 10; // Extra glow
+        } else {
+            ctx.shadowColor = this.jumpsRemaining > 1 ? 'rgba(78, 204, 163, 0.8)' : this.glowColor;
+            ctx.shadowBlur = glowIntensity;
+        }
         
         // Draw bonds between atoms first (if more than one atom)
         if (this.moleculeData.atoms.length > 1) {
